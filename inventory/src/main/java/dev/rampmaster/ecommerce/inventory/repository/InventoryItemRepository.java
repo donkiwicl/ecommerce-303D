@@ -2,8 +2,6 @@ package dev.rampmaster.ecommerce.inventory.repository;
 
 import dev.rampmaster.ecommerce.inventory.model.InventoryItem;
 import org.springframework.stereotype.Repository;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,19 +21,24 @@ public class InventoryItemRepository {
     }
 
     public List<InventoryItem> findAll() {
-        return new ArrayList<>(storage.values());
+        return storage.values().stream()
+                .map(this::copy)
+                .toList();
     }
 
     public Optional<InventoryItem> findById(Long id) {
-        return Optional.ofNullable(storage.get(id));
+        return Optional.ofNullable(storage.get(id))
+                .map(this::copy);
     }
 
     public InventoryItem save(InventoryItem entity) {
-        if (entity.getId() == null) {
-            entity.setId(sequence.incrementAndGet());
+        InventoryItem entityToStore = copy(entity);
+
+        if (entityToStore.getId() == null) {
+            entityToStore.setId(sequence.incrementAndGet());
         }
-        storage.put(entity.getId(), entity);
-        return entity;
+        storage.put(entityToStore.getId(), entityToStore);
+        return copy(entityToStore);
     }
 
     public boolean existsById(Long id) {
@@ -44,6 +47,15 @@ public class InventoryItemRepository {
 
     public void deleteById(Long id) {
         storage.remove(id);
+    }
+
+    private InventoryItem copy(InventoryItem source) {
+        return new InventoryItem(
+                source.getId(),
+                source.getProductId(),
+                source.getQuantity(),
+                source.getWarehouseCode()
+        );
     }
 }
 
