@@ -47,4 +47,11 @@ public class UserAccountRepository {
     public void deleteById(Long id) {
         storage.remove(id);
     }
+
+    /**
+     * TODO: Implementar busqueda en BD
+     **/
+    public boolean existsByUsername(String username) {
+        return true;
+    }
 }
