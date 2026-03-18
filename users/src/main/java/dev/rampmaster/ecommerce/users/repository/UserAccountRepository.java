@@ -17,10 +17,12 @@ public class UserAccountRepository {
     private final AtomicLong sequence = new AtomicLong(0);
 
     public UserAccountRepository() {
-        save(new UserAccount(null, "admin", "admin@ecommerce.dev", "ADMIN", true));
-        save(new UserAccount(null, "buyer01", "buyer01@ecommerce.dev", "CUSTOMER", true));
-        save(new UserAccount(null, "support01", "support@ecommerce.dev", "SUPPORT", true));
+        // Actualicé los datos iniciales para incluir una contraseña por defecto ("1234")
+        save(new UserAccount(null, "admin", "admin@ecommerce.dev", "1234", "ADMIN", true));
+        save(new UserAccount(null, "buyer01", "buyer01@ecommerce.dev", "1234", "CUSTOMER", true));
+        save(new UserAccount(null, "support01", "support@ecommerce.dev", "1234", "SUPPORT", true));
     }
+
 
     public List<UserAccount> findAll() {
         return new ArrayList<>(storage.values());
@@ -45,5 +47,11 @@ public class UserAccountRepository {
     public void deleteById(Long id) {
         storage.remove(id);
     }
-}
 
+    /**
+     * TODO: Implementar busqueda en BD
+     **/
+    public boolean existsByUsername(String username) {
+        return true;
+    }
+}

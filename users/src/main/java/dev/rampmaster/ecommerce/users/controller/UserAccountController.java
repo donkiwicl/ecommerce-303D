@@ -4,14 +4,7 @@ import dev.rampmaster.ecommerce.users.model.UserAccount;
 import dev.rampmaster.ecommerce.users.service.UserAccountService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,11 +18,13 @@ public class UserAccountController {
         this.service = service;
     }
 
+    // Listar todos los usuarios
     @GetMapping
     public List<UserAccount> findAll() {
         return service.findAll();
     }
 
+    // Buscar por ID
     @GetMapping("/{id}")
     public ResponseEntity<UserAccount> findById(@PathVariable Long id) {
         return service.findById(id)
@@ -37,11 +32,27 @@ public class UserAccountController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    public ResponseEntity<UserAccount> create(@RequestBody UserAccount entity) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(entity));
+    // REGISTRO DE USUARIOS
+    // Este método usará la lógica de tu Service para asignar rol "CUSTOMER"
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody UserAccount entity) {
+        try {
+            UserAccount created = service.create(entity);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (RuntimeException e) {
+            // Retorna el error si el usuario ya existe o falta la contraseña
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
+    // =========================================================
+    // ESPACIO RESERVADO PARA LOGIN Y GENERACIÓN DE JWT
+    // Aquí los compañeros deben implementar el @PostMapping("/login")
+    // que valide credenciales y devuelva el Token.
+    // =========================================================
+
+
+    // Actualizar usuario
     @PutMapping("/{id}")
     public ResponseEntity<UserAccount> update(@PathVariable Long id, @RequestBody UserAccount entity) {
         return service.update(id, entity)
@@ -49,6 +60,7 @@ public class UserAccountController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // Eliminar usuario
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (!service.delete(id)) {
@@ -57,4 +69,3 @@ public class UserAccountController {
         return ResponseEntity.noContent().build();
     }
 }
-
