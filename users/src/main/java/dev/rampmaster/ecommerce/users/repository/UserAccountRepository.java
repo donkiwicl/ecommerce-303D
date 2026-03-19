@@ -1,14 +1,15 @@
 package dev.rampmaster.ecommerce.users.repository;
 
-import dev.rampmaster.ecommerce.users.model.UserAccount;
-import org.springframework.stereotype.Repository;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.springframework.stereotype.Repository;
+
+import dev.rampmaster.ecommerce.users.model.UserAccount;
 
 @Repository
 public class UserAccountRepository {
@@ -17,9 +18,9 @@ public class UserAccountRepository {
     private final AtomicLong sequence = new AtomicLong(0);
 
     public UserAccountRepository() {
-        save(new UserAccount(null, "admin", "admin@ecommerce.dev", "ADMIN", true));
-        save(new UserAccount(null, "buyer01", "buyer01@ecommerce.dev", "CUSTOMER", true));
-        save(new UserAccount(null, "support01", "support@ecommerce.dev", "SUPPORT", true));
+        save(new UserAccount(null, "admin", "admin@ecommerce.dev", "admin123", "ADMIN", true));
+        save(new UserAccount(null, "buyer01", "buyer01@ecommerce.dev", "buyer123", "CUSTOMER", true));
+        save(new UserAccount(null, "support01", "support@ecommerce.dev", "support123", "SUPPORT", true));
     }
 
     public List<UserAccount> findAll() {
