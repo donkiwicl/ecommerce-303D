@@ -17,9 +17,9 @@ public class CartItemRepository {
     private final AtomicLong sequence = new AtomicLong(0);
 
     public CartItemRepository() {
-        save(new CartItem(null, 2L, 1L, 1));
-        save(new CartItem(null, 2L, 3L, 2));
-        save(new CartItem(null, 1L, 2L, 1));
+        save(new CartItem(null, 2L, 1L, 1, 19.99));
+        save(new CartItem(null, 2L, 3L, 2, 23.99));
+        save(new CartItem(null, 1L, 2L, 1, 5.99));
     }
 
     public List<CartItem> findAll() {

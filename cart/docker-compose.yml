@@ -18,6 +18,20 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: cart-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+    command: ["redis-server", "--notify-keyspace-events", "Ex"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   cart:
     build:
       context: .
@@ -27,6 +41,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/cartdb?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=cart
+      - SPRING_DATASOURCE_PASSWORD=cartpass
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
     ports:
       - "8084:8084"
     healthcheck:
