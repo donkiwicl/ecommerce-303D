@@ -1,12 +1,14 @@
 package dev.rampmaster.ecommerce.users.controller;
 
-import dev.rampmaster.ecommerce.users.model.UserAccount;
-import dev.rampmaster.ecommerce.users.service.UserAccountService;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import dev.rampmaster.ecommerce.users.model.UserAccount;
+import dev.rampmaster.ecommerce.users.model.LoginRequest;
+import dev.rampmaster.ecommerce.users.model.Role;
+import dev.rampmaster.ecommerce.users.service.UserAccountService;
 
 @RestController
 @RequestMapping("/api/users")
@@ -18,13 +20,16 @@ public class UserAccountController {
         this.service = service;
     }
 
-    // Listar todos los usuarios
-    @GetMapping
-    public List<UserAccount> findAll() {
-        return service.findAll();
+    // Obtener todos los usuarios (Requiere ADMIN o SUPPORT)
+    @GetMapping("/all")
+    public ResponseEntity<?> findAll(@RequestHeader(value = "X-User-Role", defaultValue = "COSTUMER") Role role) {
+        if (!service.canViewAll(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Acceso denegado: Se requiere rol ADMIN o SUPPORT.");
+        }
+        return ResponseEntity.ok(service.findAll());
     }
 
-    // Buscar por ID
     @GetMapping("/{id}")
     public ResponseEntity<UserAccount> findById(@PathVariable Long id) {
         return service.findById(id)
@@ -32,27 +37,11 @@ public class UserAccountController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // REGISTRO DE USUARIOS
-    // Este método usará la lógica de tu Service para asignar rol "CUSTOMER"
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody UserAccount entity) {
-        try {
-            UserAccount created = service.create(entity);
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (RuntimeException e) {
-            // Retorna el error si el usuario ya existe o falta la contraseña
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @PostMapping
+    public ResponseEntity<UserAccount> create(@RequestBody UserAccount entity) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(entity));
     }
 
-    // =========================================================
-    // ESPACIO RESERVADO PARA LOGIN Y GENERACIÓN DE JWT
-    // Aquí los compañeros deben implementar el @PostMapping("/login")
-    // que valide credenciales y devuelva el Token.
-    // =========================================================
-
-
-    // Actualizar usuario
     @PutMapping("/{id}")
     public ResponseEntity<UserAccount> update(@PathVariable Long id, @RequestBody UserAccount entity) {
         return service.update(id, entity)
@@ -60,14 +49,29 @@ public class UserAccountController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Eliminar usuario
+    // Borrar usuario (Solo ADMINISTRADOR)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id, 
+                                    @RequestHeader(value = "X-User-Role", defaultValue = "COSTUMER") Role role) {
+        if (!service.canDeleteUser(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Acceso denegado: Solo el ADMINISTRADOR tiene permisos para eliminar registros.");
+        }
+
         if (!service.delete(id)) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) { // Cambiado aquí
+    return service.findByEmail(loginRequest.getEmail())
+            .filter(user -> user.getPassword() != null && 
+                    user.getPassword().equals(loginRequest.getPassword()))
+            .map(user -> ResponseEntity.ok("Login exitoso. Bienvenido " + user.getUsername() + 
+                                           ". Tu rol es: " + user.getRole()))
+            .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Credenciales incorrectas"));
+    }
 }
-
-

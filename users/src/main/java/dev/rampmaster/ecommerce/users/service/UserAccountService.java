@@ -1,11 +1,11 @@
 package dev.rampmaster.ecommerce.users.service;
 
-import dev.rampmaster.ecommerce.users.model.UserAccount;
-import dev.rampmaster.ecommerce.users.repository.UserAccountRepository;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.stereotype.Service;
+import dev.rampmaster.ecommerce.users.model.UserAccount;
+import dev.rampmaster.ecommerce.users.model.Role; 
+import dev.rampmaster.ecommerce.users.repository.UserAccountRepository;
 
 @Service
 public class UserAccountService {
@@ -16,6 +16,20 @@ public class UserAccountService {
         this.repository = repository;
     }
 
+    // --- Lógica de Permisos (RBAC) ---
+    
+    public boolean canDeleteUser(Role requesterRole) {
+        // Solo el ADMIN tiene permisos de eliminación
+        return Role.ADMIN.equals(requesterRole);
+    }
+
+    public boolean canViewAll(Role requesterRole) {
+        // ADMIN y SUPPORT pueden visualizar la lista completa de cuentas
+        return Role.ADMIN.equals(requesterRole) || Role.SUPPORT.equals(requesterRole);
+    }
+
+    // --- Métodos CRUD ---
+
     public List<UserAccount> findAll() {
         return repository.findAll();
     }
@@ -24,34 +38,13 @@ public class UserAccountService {
         return repository.findById(id);
     }
 
-    // --- REGISTRO (ESTO SÍ FUNCIONA) ---
     public UserAccount create(UserAccount entity) {
-        if (entity.getPassword() == null || entity.getPassword().trim().isEmpty()) {
-            throw new RuntimeException("Error: La contraseña es obligatoria.");
+        // Si no se especifica rol, se asigna COSTUMER por defecto
+        if (entity.getRole() == null) {
+            entity.setRole(Role.COSTUMER);
         }
-
-        if (repository.existsByUsername(entity.getUsername())) {
-            throw new RuntimeException("Error: El nombre de usuario ya está en uso.");
-        }
-
-        entity.setId(null); 
-        entity.setRole("CUSTOMER"); 
-        entity.setActive(true);     
-
         return repository.save(entity);
     }
-
-    /* =========================================================
-       COMENTADO PARA EVITAR ERROR DE COMPILACIÓN
-       Tus compañeros deben habilitar esto cuando implementen 
-       el método findByUsername en el Repository.
-       =========================================================
-       
-    public Optional<UserAccount> login(String username, String password) {
-        return repository.findByUsername(username)
-                .filter(user -> user.getPassword().equals(password)); 
-    }
-    */
 
     public Optional<UserAccount> update(Long id, UserAccount entity) {
         if (!repository.existsById(id)) {
@@ -68,4 +61,9 @@ public class UserAccountService {
         repository.deleteById(id);
         return true;
     }
+
+    public Optional<UserAccount> findByEmail(String email) {
+        return repository.findByEmail(email);
+    }
+    
 }

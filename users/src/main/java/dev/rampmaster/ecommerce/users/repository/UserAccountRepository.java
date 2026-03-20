@@ -1,14 +1,14 @@
 package dev.rampmaster.ecommerce.users.repository;
 
-import dev.rampmaster.ecommerce.users.model.UserAccount;
-import org.springframework.stereotype.Repository;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.stereotype.Repository;
+import dev.rampmaster.ecommerce.users.model.UserAccount;
+import dev.rampmaster.ecommerce.users.model.Role; // IMPORTANTE: Importar el Enum
 
 @Repository
 public class UserAccountRepository {
@@ -17,12 +17,11 @@ public class UserAccountRepository {
     private final AtomicLong sequence = new AtomicLong(0);
 
     public UserAccountRepository() {
-        // Actualicé los datos iniciales para incluir una contraseña por defecto ("1234")
-        save(new UserAccount(null, "admin", "admin@ecommerce.dev", "1234", "ADMIN", true));
-        save(new UserAccount(null, "buyer01", "buyer01@ecommerce.dev", "1234", "CUSTOMER", true));
-        save(new UserAccount(null, "support01", "support@ecommerce.dev", "1234", "SUPPORT", true));
+        // CORRECCIÓN: Usar Role.ADMIN, Role.COSTUMER, etc., en lugar de Strings
+        save(new UserAccount(null, "admin", "admin@ecommerce.dev", "admin123", Role.ADMIN, true));
+        save(new UserAccount(null, "buyer01", "buyer01@ecommerce.dev", "buyer123", Role.COSTUMER, true));
+        save(new UserAccount(null, "support01", "support@ecommerce.dev", "support123", Role.SUPPORT, true));
     }
-
 
     public List<UserAccount> findAll() {
         return new ArrayList<>(storage.values());
@@ -48,13 +47,9 @@ public class UserAccountRepository {
         storage.remove(id);
     }
 
-    /**
-     * TODO: Implementar busqueda en BD
-     **/
-    public boolean existsByUsername(String username) {
-        return true;
+    public Optional<UserAccount> findByEmail(String email) {
+        return storage.values().stream()
+                .filter(user -> user.getEmail() != null && user.getEmail().equals(email))
+                .findFirst();
     }
 }
-
-
-
