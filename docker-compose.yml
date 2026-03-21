@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  products-service:    # <--- Debe tener exactamente 2 espacios de sangría
+    build: ./products  # <--- Debe tener 4 espacios de sangría
+    container_name: products_micro_cont
+    ports:
+      - "3001:8082"
+    volumes:
+      - ./products/wallet:/app/wallet
+    environment:
+      - SERVER_PORT=8082                # Forzamos el puerto correcto
+      - SERVER_SERVLET_CONTEXT_PATH=/products  # Forzamos la ruta
+      - DB_USER=ADMIN
+      - DB_PASSWORD=Duoc_Pro_2026_!!
+      - DB_CONNECTION_STRING=productsdb_high
+      - TNS_ADMIN=/app/wallet
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@productsdb_high?TNS_ADMIN=/app/wallet
+    restart: always
