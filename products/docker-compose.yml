@@ -1,0 +1,13 @@
+services:
+  catalog-service:
+    build: .
+    container_name: catalog-service
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      LOG_LEVEL: info
+      REQUEST_TIMEOUT_MS: 5000
+      MAX_RETRIES: 2
+      RETRY_DELAY_MS: 300
