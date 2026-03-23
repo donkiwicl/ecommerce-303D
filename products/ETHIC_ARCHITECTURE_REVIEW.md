@@ -1,118 +1,132 @@
-# Revisión Ética del Diseño de Arquitecturas - Microservicio de Productos
+# Revision Etica de Arquitectura - Microservicio de Productos
 
-## Resumen Ejecutivo
+## 1. Seguridad
 
-Este documento analiza el diseño ético de la arquitectura del microservicio de catálogo de productos, evaluando seguridad, privacidad y sostenibilidad según los principios de arquitectura responsable.
+### Estado Actual
+- Sin autenticacion JWT
+- Sin RBAC implementado
+- Logger auditado (Pino)
+- Variables de entorno configuradas
 
----
+### Riesgos
+- Acceso no autorizado (CRITICO)
+- Inyeccion de datos (CRITICO)
+- Exposicion de credenciales (ALTO)
 
-## 1. Análisis de Seguridad
-
-### 1.1 Autenticación y Control de Acceso
-
-**Estado Actual:**
-- ✅ Express con gestión básica de rutas
-- ✅ Logger con Pino para auditoría
-- ⚠️ No hay implementación explícita de autenticación
-
-**Recomendaciones:**
-- Implementar JWT (JSON Web Tokens) para autenticación stateless
-- Validación de tokens en middleware
-- Control de acceso basado en roles (RBAC)
-- Encriptación de credenciales en tránsito (HTTPS obligatorio)
-
-### 1.2 Manejo de Datos Sensibles
-
-**Riesgos Identificados:**
-- ⚠️ Datos de clientes en repositorio potencialmente expuesto
-- ⚠️ Variables de entorno sin encriptación (parcial)
-
-**Acciones Correctivas:**
-- ✅ Uso de `.env` para credenciales (Ya implementado)
-- ✅ Redacción automática de logs sensibles con `@pinojs/redact`
-- ⚠️ Validación de entrada en todas las rutas (A implementar)
-- ⚠️ Rate limiting para prevenir abuso (A implementar)
+### Recomendaciones
+- JWT para autenticacion stateless
+- RBAC con roles: admin, user, public
+- Validacion de entrada con Joi
+- Rate limiting: 100 req/15min por IP
+- HTTPS obligatorio
 
 ---
 
-## 2. Análisis de Privacidad
+## 2. Privacidad
 
-### 2.1 Cumplimiento Normativo
+### Normativo
+- GDPR Art. 15: Derecho de acceso
+- GDPR Art. 17: Derecho al olvido
+- CCPA: Cumplimiento similar
 
-**GDPR y CCPA:**
-- ✅ Logs auditables de acceso a datos
-- ⚠️ Falta política de retención de datos
-- ⚠️ No hay mecanismo de eliminación segura (GDPR Art. 17)
+### Estado
+- Logs parcialmente redactados
+- Sin endpoints GDPR implementados
+- Variables de entorno (.env) configuradas
 
-**Recomendaciones:**
-- Implementar "derecho al olvido" (GDPR Art. 17)
-- Auditoría de acceso a datos personales
-- Datos anonimizados en logs
-- Política de retención definida (máximo 90 días para logs)
-
-### 2.2 Protección de Datos
-
-**Implementar:**
-- Sanitización de datos sensibles
-- Encriptación en tránsito (TLS)
-- Consentimiento explícito
-- Auditoría documentada
+### Acciones
+- Implementar GET /api/privacy/my-data
+- Implementar DELETE /api/privacy/my-data
+- Politica de retencion: maximo 30 dias
+- Auditoria de accesos documentada
 
 ---
 
-## 3. Análisis de Sostenibilidad
+## 3. Sostenibilidad
 
-### 3.1 Eficiencia Energética
+### Implementado
+- Cache activo
+- HPA en Kubernetes
+- Retry exponencial
 
-**Optimizaciones Implementadas:**
-- ✅ Cache con `cacheService` para reducir consultas a BD
-- ✅ Reintentos exponenciales en `retry.js`
-- ✅ Kubernetes HPA para auto-scaling
+### Pendiente
+- Monitoreo ambiental
+- Metricas de consumo
+- Alertas de recursos
 
-**Mejoras Sugeridas:**
-- Monitoreo activo de consumo de recursos
-- Compresión GZIP en respuestas
-- Paginación en endpoints de listado
-
----
-
-## 4. Riesgos Éticos Identificados
-
-| Riesgo | Impacto | Probabilidad | Mitigación |
-|--------|---------|--------------|------------|
-| Acceso no autorizado | CRÍTICO | MEDIA | JWT + RBAC |
-| Exposición de datos | CRÍTICO | BAJA | Encriptación + Auditoría |
-| Consumo excesivo | MEDIO | MEDIA | Caching + HPA |
-| Falta de transparencia | ALTO | BAJA | Logs auditados |
+### Objetivos
+- CPU/request: <50ms
+- Latencia p99: <200ms
+- Uptime: >99.9%
+- CO2: -15% reduccion
 
 ---
 
-## 5. Recomendaciones Prioritarias
+## 4. Riesgos Identificados
 
-### Priority 1 (Inmediato)
-1. ✅ Implementar autenticación JWT
-2. ✅ Validación de entrada en todas las rutas
-3. ✅ Rate limiting en endpoints públicos
-
-### Priority 2 (Corto Plazo)
-4. Auditoría completa de logs
-5. Política de privacidad documentada
-6. Cifrado de comunicación TLS
-
-### Priority 3 (Mediano Plazo)
-7. Análisis de impacto ambiental
-8. Optimización de queries
-9. Certificación de seguridad
+| Riesgo | Impacto | Probabilidad | Mitigacion |
+|--------|---------|------------|-----------|
+| Acceso no autorizado | CRITICO | MEDIA | JWT+RBAC |
+| Exposicion datos | CRITICO | BAJA | Encriptacion |
+| Consumo excesivo | MEDIO | MEDIA | Caching+HPA |
+| Falta transparencia | ALTO | BAJA | Auditoria |
 
 ---
 
-## 6. Conclusiones
+## 5. Plan de Implementacion
 
-El microservicio de productos **cumple parcialmente** con los estándares éticos de arquitectura. Se han identificado oportunidades de mejora en seguridad y privacidad que deben atenderse antes de producción.
+### Sprint 1 (2 semanas)
+- JWT + RBAC
+- Validacion Joi
+- Rate limiting
+- Tests de seguridad
 
-**Status: PENDIENTE DE IMPLEMENTACIÓN COMPLETA**
+### Sprint 2 (1 semana)
+- GDPR endpoints
+- Auditoria de logs
+- Documentacion privacidad
+- TLS certificado
+
+### Sprint 3 (1 semana)
+- Prometheus setup
+- Grafana dashboard
+- Alertas configuradas
+- Analisis de recursos
 
 ---
 
-*Revisión realizada: 23/03/2026*
-*Responsable: Equipo de Arquitectura*
+## 6. Checklist
+
+Seguridad:
+- [ ] JWT implementado
+- [ ] RBAC en todas rutas
+- [ ] Validacion Joi completa
+- [ ] Rate limiting activo
+- [ ] Tests de seguridad >80%
+
+Privacidad:
+- [ ] Logs redactados automaticamente
+- [ ] GET /privacy/my-data
+- [ ] DELETE /privacy/my-data
+- [ ] Politica de retencion
+- [ ] Auditoria documentada
+
+Monitoreo:
+- [ ] Health check endpoint
+- [ ] Prometheus metrics
+- [ ] Grafana dashboard
+- [ ] Alertas configuradas
+
+---
+
+## 7. Stack Tecnologico
+
+- Node.js 20+
+- Express.js
+- JWT (jsonwebtoken)
+- Joi (validacion)
+- Pino (logging)
+- express-rate-limit
+- Docker + Kubernetes
+- Prometheus + Grafana
+

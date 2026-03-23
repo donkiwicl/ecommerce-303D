@@ -1,13 +1,10 @@
-# Documento Técnico - Implementación de Estándares Éticos
+# Implementacion Tecnica - Etica en Arquitectura
 
-## 1. Seguridad - Implementación JWT
+## 1. JWT - Autenticacion
 
-### Instalación
 ```bash
 npm install jsonwebtoken express-jwt bcryptjs
 ```
-
-### Middleware de Autenticación
 
 ```javascript
 // middleware/auth.js
@@ -15,28 +12,27 @@ const jwt = require('jsonwebtoken');
 
 const verifyToken = (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ error: 'Token requerido' });
-  }
+  if (!token) return res.status(401).json({ error: 'Token requerido' });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (err) {
-    res.status(403).json({ error: 'Token inválido' });
+    res.status(403).json({ error: 'Token invalido' });
   }
 };
 
 module.exports = { verifyToken };
 ```
 
-### RBAC - Control de Acceso
+---
+
+## 2. RBAC - Control de Acceso
 
 ```javascript
 // middleware/rbac.js
-const authMiddleware = {
+const rbac = {
   ADMIN: (req, res, next) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Acceso denegado' });
@@ -49,39 +45,55 @@ const authMiddleware = {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
     next();
-  }
+  },
+
+  PUBLIC: (req, res, next) => next()
 };
 
-module.exports = authMiddleware;
+module.exports = rbac;
 ```
 
-### Aplicar en Rutas
-
+Usar en rutas:
 ```javascript
-// routes/catalogRoutes.js
-const express = require('express');
-const { verifyToken } = require('../middleware/auth');
-const rbac = require('../middleware/rbac');
-
-const router = express.Router();
-
-// Público
-router.get('/products', getProducts);
-
-// Protegido
-router.get('/products/:id', verifyToken, rbac.USER, getProductById);
-
-// Solo admin
+router.get('/products', rbac.PUBLIC, getProducts);
 router.post('/products', verifyToken, rbac.ADMIN, createProduct);
-
-module.exports = router;
 ```
 
 ---
 
-## 2. Privacidad - GDPR Compliance
+## 3. Validacion - Joi
 
-### Redacción de Logs
+```bash
+npm install joi
+```
+
+```javascript
+// validation/productSchema.js
+const Joi = require('joi');
+
+const productSchema = Joi.object({
+  name: Joi.string().alphanum().min(3).max(50).required(),
+  price: Joi.number().positive().required(),
+  stock: Joi.number().integer().min(0).required(),
+  category: Joi.string().valid('electronics', 'clothing', 'books').required()
+});
+
+module.exports = productSchema;
+```
+
+Middleware:
+```javascript
+const validate = (schema) => (req, res, next) => {
+  const { error, value } = schema.validate(req.body);
+  if (error) return res.status(400).json({ error: error.details });
+  req.validatedData = value;
+  next();
+};
+```
+
+---
+
+## 4. Logs Redactados
 
 ```javascript
 // logger.js
@@ -90,106 +102,60 @@ const pino = require('pino');
 const logger = pino({
   redact: {
     paths: ['email', 'phone', 'password', 'creditCard'],
-    censor: '***REDACTED***'
+    censor: '***REDACTADO***'
   }
 });
 
 module.exports = logger;
 ```
 
-### Endpoint GDPR Art. 17 - Derecho al Olvido
+---
+
+## 5. GDPR - Derecho al Olvido
 
 ```javascript
 // routes/privacyRoutes.js
 router.delete('/my-data', verifyToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
+  const userId = req.user.id;
 
-    const deleteRequest = {
-      userId,
-      requestDate: new Date(),
-      status: 'pending',
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    };
-
-    await deleteRequestRepository.create(deleteRequest);
-
-    logger.info({
-      event: 'deletion_requested',
-      userId,
-      timestamp: new Date()
-    });
-
-    res.json({
-      message: 'Solicitud procesada. Se eliminará en máximo 30 días.',
-      dueDate: deleteRequest.dueDate
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Error procesando solicitud' });
-  }
-});
-```
-
----
-
-## 3. Validación de Entrada
-
-### Instalar Joi
-
-```bash
-npm install joi
-```
-
-### Schema de Producto
-
-```javascript
-// validation/productSchema.js
-const Joi = require('joi');
-
-const productSchema = Joi.object({
-  name: Joi.string().alphanum().min(3).max(50).required(),
-  price: Joi.number().positive().precision(2).required(),
-  stock: Joi.number().integer().min(0).required(),
-  category: Joi.string().valid('electronics', 'clothing').required()
-});
-
-module.exports = productSchema;
-```
-
-### Middleware de Validación
-
-```javascript
-// middleware/validate.js
-const validate = (schema) => {
-  return (req, res, next) => {
-    const { error, value } = schema.validate(req.body);
-
-    if (error) {
-      return res.status(400).json({
-        error: 'Validación fallida',
-        details: error.details
-      });
-    }
-
-    req.validatedData = value;
-    next();
+  const deleteRequest = {
+    userId,
+    requestDate: new Date(),
+    status: 'pending',
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   };
-};
 
-module.exports = validate;
+  await deleteRequestRepository.create(deleteRequest);
+
+  logger.info({
+    event: 'deletion_requested',
+    userId,
+    timestamp: new Date()
+  });
+
+  res.json({
+    message: 'Solicitud procesada. Eliminacion en max 30 dias.',
+    dueDate: deleteRequest.dueDate
+  });
+});
+```
+
+Acceso a datos:
+```javascript
+router.get('/my-data', verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  const userData = await userRepository.getAllData(userId);
+  res.json(userData);
+});
 ```
 
 ---
 
-## 4. Rate Limiting
-
-### Instalación
+## 6. Rate Limiting
 
 ```bash
 npm install express-rate-limit
 ```
-
-### Implementación
 
 ```javascript
 // middleware/rateLimiter.js
@@ -204,26 +170,19 @@ const limiter = rateLimit({
 module.exports = { limiter };
 ```
 
-### Usar en App
-
+En app.js:
 ```javascript
-// app.js
-const { limiter } = require('./middleware/rateLimiter');
-
 app.use('/api/', limiter);
 ```
 
 ---
 
-## 5. Health Check
+## 7. Health Check
 
 ```javascript
-// routes/healthRoutes.js
-const express = require('express');
-const router = express.Router();
-
+// routes/health.js
 router.get('/health', (req, res) => {
-  const health = {
+  res.json({
     status: 'UP',
     timestamp: new Date(),
     uptime: process.uptime(),
@@ -231,52 +190,26 @@ router.get('/health', (req, res) => {
       used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
       total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
     }
-  };
-
-  res.json(health);
+  });
 });
-
-module.exports = router;
 ```
 
 ---
 
-## 6. Variables de Entorno
+## 8. Variables de Entorno
 
 ```env
 NODE_ENV=production
-JWT_SECRET=tu_secret_super_seguro_32_chars_minimo
-DATABASE_URL=postgresql://user:pass@localhost:5432/ecommerce
+JWT_SECRET=tu_secret_minimo_32_caracteres
+DATABASE_URL=postgresql://user:pass@localhost:5432/db
 LOG_LEVEL=info
-LOG_RETENTION_DAYS=30
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
 ```
 
 ---
 
-## 7. Docker
-
-```dockerfile
-FROM node:20-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY src ./src
-
-USER node
-
-EXPOSE 3000
-
-CMD ["node", "src/index.js"]
-```
-
----
-
-## 8. Testing de Seguridad
+## 9. Testing
 
 ```bash
 npm install --save-dev jest supertest
@@ -288,29 +221,33 @@ const request = require('supertest');
 const app = require('../src/app');
 
 describe('Authentication', () => {
-  test('Debe rechazar request sin token', async () => {
+  test('rechaza request sin token', async () => {
     const res = await request(app)
       .get('/api/products/1')
       .expect(401);
+    expect(res.body.error).toBe('Token requerido');
   });
 });
 ```
 
+```bash
+npm test
+npm run test:security
+npm run test:coverage
+```
+
 ---
 
-## Checklist de Implementación
+## 10. Checklist de Implementacion
 
-- [ ] JWT implementado
-- [ ] RBAC con roles
-- [ ] Validación con Joi
+- [ ] JWT middleware implementado
+- [ ] RBAC en todas las rutas
+- [ ] Validacion Joi en entrada
 - [ ] Rate limiting activo
-- [ ] Logs redactados
-- [ ] GDPR endpoints
-- [ ] Health check
-- [ ] Tests de seguridad
-- [ ] Docker configurado
-- [ ] Variables de entorno
+- [ ] Logs redactados automaticamente
+- [ ] Endpoints GDPR funcionando
+- [ ] Health check disponible
+- [ ] Tests de seguridad >80%
+- [ ] Variables de entorno configuradas
+- [ ] Documentacion actualizada
 
----
-
-*Documento generado: 23/03/2026*
