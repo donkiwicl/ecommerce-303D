@@ -1,0 +1,19 @@
+# Cambiamos de 17 a 21 para que coincida con tu compilación (version 65.0)
+FROM eclipse-temurin:21-jdk
+
+# Directorio de trabajo
+WORKDIR /app
+
+# Copiar el archivo ejecutable de Java (el que genera Maven)
+# Nota: Primero debemos compilarlo, pero para el Dockerfile usaremos el .jar
+COPY target/*.jar app.jar
+
+# Copiar el Wallet de Oracle para la conexión segura
+COPY ./wallet /app/wallet
+ENV TNS_ADMIN=/app/wallet
+
+# Exponer el puerto
+EXPOSE 3001
+
+# Comando para arrancar la aplicación Java
+ENTRYPOINT ["java", "-jar", "app.jar"]
