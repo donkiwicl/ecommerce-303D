@@ -1,32 +1,30 @@
-package dev.rampmaster.ecommerce.cart.service;
+package dev.rampmaster.ecommerce.cart.infrastructure.listener;
 
-import dev.rampmaster.ecommerce.cart.repository.CartItemRepository;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.listener.KeyExpirationEventMessageListener;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CartExpiration extends KeyExpirationEventMessageListener {
+public class CartExpirationEventListener extends KeyExpirationEventMessageListener {
 
-    private final CartItemRepository repository;
+    private static final String CART_CACHE_KEY_PREFIX = "CART_USER:";
 
-    public CartExpiration(RedisMessageListenerContainer listenerContainer, CartItemRepository repository) {
+    public CartExpirationEventListener(RedisMessageListenerContainer listenerContainer) {
         super(listenerContainer);
-        this.repository = repository;
     }
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
         String expiredKey = message.toString();
 
-        if (expiredKey.startsWith("CART_USER:")) {
-            String userId = expiredKey.split(":")[1];
+        if (expiredKey.startsWith(CART_CACHE_KEY_PREFIX)) {
+            String userId = expiredKey.substring(CART_CACHE_KEY_PREFIX.length());
 
             System.out.println("⏰ EXPIRACIÓN: Carrito del usuario " + userId + " ha caducado.");
             System.out.println("💾 Guardando recordatorio en MySQL para el comprador...");
 
-            // Aquí la lógica de persistencia final si fuera necesaria
+            // TODO: Implementar lógica de persistencia final o notificación al usuario
         }
     }
 }

@@ -1,4 +1,4 @@
-package dev.rampmaster.ecommerce.cart.config;
+package dev.rampmaster.ecommerce.cart.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
