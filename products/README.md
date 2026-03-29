@@ -1,0 +1,1 @@
+# Proyecto Essenza Fullstack III Primer semestre 2026
