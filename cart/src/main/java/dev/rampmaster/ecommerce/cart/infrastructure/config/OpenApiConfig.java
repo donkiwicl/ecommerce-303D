@@ -1,4 +1,4 @@
-package dev.rampmaster.ecommerce.cart.config;
+package dev.rampmaster.ecommerce.cart.infrastructure.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -21,4 +21,3 @@ public class OpenApiConfig {
                         .description("Context path del microservicio cart"));
     }
 }
-
