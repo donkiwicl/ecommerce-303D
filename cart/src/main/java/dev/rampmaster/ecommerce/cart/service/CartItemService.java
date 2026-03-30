@@ -2,6 +2,7 @@ package dev.rampmaster.ecommerce.cart.service;
 
 import dev.rampmaster.ecommerce.cart.model.CartItem;
 import dev.rampmaster.ecommerce.cart.repository.CartItemRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import java.time.Duration;
@@ -14,6 +15,7 @@ public class CartItemService {
     private final CartItemRepository repository;
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String REDIS_KEY = "CART_USER:";
+    // private final InventoryClient inventoryClient;
 
     public CartItemService(CartItemRepository repository, RedisTemplate<String, Object> redisTemplate) {
         this.repository = repository;
@@ -28,27 +30,30 @@ public class CartItemService {
         return repository.findById(id);
     }
 
+    @CircuitBreaker(name = "inventoryCB", fallbackMethod = "fallbackCreate")
     public CartItem create(CartItem entity) {
-        // Guardamos en MySQL primero para generar el ID real
+        // boolean hasStock = inventoryClient.checkStock(entity.getProductId(), entity.getQuantity());
+
         CartItem saved = repository.save(entity);
 
-        // Sincronizamos con Redis (Cache de velocidad)
         updateRedis(saved);
 
         return saved;
     }
 
-    // --- ESTE ES EL MÉTODO PARA EL PUTMAPPING ---
+    public CartItem fallbackCreate(CartItem entity, Throwable t) {
+        System.out.println("⚠️ ERROR: El microservicio de Inventario no responde. Aplicando Fallback.");
+        return repository.save(entity);
+    }
+
     public Optional<CartItem> update(Long id, CartItem entity) {
         return repository.findById(id).map(existingItem -> {
-            // Actualizamos los datos del objeto existente
+
             existingItem.setQuantity(entity.getQuantity());
             existingItem.setProductId(entity.getProductId());
 
-            // 1. Persistencia en MySQL
             CartItem updated = repository.save(existingItem);
 
-            // 2. Actualización en Redis
             updateRedis(updated);
 
             return updated;
@@ -66,11 +71,9 @@ public class CartItemService {
         }).orElse(false);
     }
 
-    // Método privado para no repetir código de Redis
     private void updateRedis(CartItem item) {
         String key = REDIS_KEY + item.getUserId();
         redisTemplate.opsForHash().put(key, item.getProductId().toString(), item.getQuantity());
         redisTemplate.expire(key, Duration.ofHours(1));
     }
 }
-

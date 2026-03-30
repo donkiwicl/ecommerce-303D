@@ -53,7 +53,7 @@ services:
       - "8084:8084"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8084/cart/openapi"]
-      interval: 15s
+      interval: 20s
       timeout: 5s
       retries: 10
 
